@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Sienna AI Agent</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=Fira+Code:wght@400;500&display=swap');
+
+  :root{
+    --bg-deep:#0a0a0f;--bg-card:#12121a;--bg-elevated:#1a1a25;--accent:#e8b86d;--accent-soft:rgba(232,184,109,0.15);
+    --text-primary:#f0f0f5;--text-secondary:#8a8a9a;--text-muted:#5a5a6a;--border:#2a2a3a;
+    --success:#4ade80;--error:#f87171;--info:#60a5fa;--code-bg:#0d0d14;
+    --sienna-gradient:linear-gradient(135deg,#c9a227,#e8b86d,#f4d03f);
+    --glass:rgba(18,18,26,0.85);--shadow:0 4px 16px rgba(0,0,0,0.4);
+    --input-bg:#1a1a25;--overlay-bg:rgba(10,10,15,0.96);--chip-bg:#1a1a25;--wave-opacity:1;
+  }
+  [data-theme="light"]{
+    --bg-deep:#f5f5f7;--bg-card:#ffffff;--bg-elevated:#f0f0f5;--accent:#b8860b;--accent-soft:rgba(184,134,11,0.12);
+    --text-primary:#1a1a1a;--text-secondary:#5a5a6a;--text-muted:#8a8a9a;--border:#e0e0e5;
+    --success:#16a34a;--error:#dc2626;--info:#2563eb;--code-bg:#f8f8fa;
+    --sienna-gradient:linear-gradient(135deg,#c9a227,#d4a017,#e8b86d);
+    --glass:rgba(255,255,255,0.85);--shadow:0 4px 16px rgba(0,0,0,0.08);
+    --input-bg:#ffffff;--overlay-bg:rgba(245,245,247,0.98);--chip-bg:#f0f0f5;--wave-opacity:0.6;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{font-family:'Inter',sans-serif;background:var(--bg-deep);color:var(--text-primary);height:100vh;overflow:hidden;display:flex;flex-direction:column;transition:background 0.4s,color 0.4s;}
+
+  .header{background:var(--glass);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;z-index:100;position:relative;transition:border-color 0.4s;}
+  .logo-section{display:flex;align-items:center;gap:10px;}
+  .logo-icon{width:36px;height:36px;background:var(--sienna-gradient);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;color:#1a1a1a;box-shadow:0 0 16px rgba(232,184,109,0.3);transition:box-shadow 0.4s;}
+  [data-theme="light"] .logo-icon{box-shadow:0 0 12px rgba(184,134,11,0.25);}
+  .logo-text h1{font-size:16px;font-weight:700;}
+  .logo-text span{font-size:10px;color:var(--text-secondary);}
+  .header-actions{display:flex;align-items:center;gap:8px;}
+  .icon-btn-sm{width:34px;height:34px;border-radius:10px;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-secondary);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;font-size:15px;}
+  .icon-btn-sm:hover{border-color:var(--accent);color:var(--accent);}
+
+  .mode-toggle{display:flex;background:var(--bg-elevated);border-radius:10px;padding:3px;border:1px solid var(--border);gap:2px;overflow-x:auto;max-width:52vw;scrollbar-width:none;}
+  .mode-toggle::-webkit-scrollbar{display:none;}
+  .mode-btn{padding:7px 12px;border:none;background:transparent;color:var(--text-secondary);font-size:11px;font-weight:600;border-radius:8px;cursor:pointer;transition:all 0.3s;font-family:'Inter',sans-serif;white-space:nowrap;}
+  .mode-btn.active{background:var(--accent);color:#1a1a1a;box-shadow:0 2px 10px rgba(232,184,109,0.3);}
+  [data-theme="light"] .mode-btn.active{box-shadow:0 2px 10px rgba(184,134,11,0.25);}
+
+  .main-content{flex:1;overflow:hidden;position:relative;}
+  .view{position:absolute;inset:0;display:none;flex-direction:column;overflow:hidden;}
+  .view.active{display:flex;}
+
+  .chat-area{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;}
+  .chat-area::-webkit-scrollbar{width:4px;}
+  .message{max-width:88%;padding:12px 16px;border-radius:16px;font-size:13px;line-height:1.6;animation:msgIn 0.3s ease;word-wrap:break-word;}
+  @keyframes msgIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+  .message.user{align-self:flex-end;background:var(--bg-elevated);border:1px solid var(--border);border-bottom-right-radius:4px;}
+  .message.sienna{align-self:flex-start;background:linear-gradient(135deg,rgba(232,184,109,0.1),rgba(232,184,109,0.05));border:1px solid rgba(232,184,109,0.2);border-bottom-left-radius:4px;}
+  [data-theme="light"] .message.sienna{background:var(--accent-soft);border-color:rgba(184,134,11,0.2);}
+  .message.sienna .msg-label{font-size:10px;font-weight:700;color:var(--accent);margin-bottom:3px;display:flex;align-items:center;gap:5px;}
+  .msg-label::before{content:'';width:5px;height:5px;background:var(--accent);border-radius:50%;box-shadow:0 0 6px var(--accent);}
+  .new-chat-wrap{display:flex;justify-content:center;padding:10px 0;}
+  .new-chat-btn{padding:8px 20px;border-radius:20px;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-secondary);font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;}
+  .new-chat-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .input-area{padding:12px 16px 18px;background:var(--glass);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex;gap:10px;align-items:center;transition:border-color 0.4s;}
+  .chat-input{flex:1;background:var(--input-bg);border:1px solid var(--border);border-radius:12px;padding:10px 14px;color:var(--text-primary);font-size:13px;font-family:'Inter',sans-serif;outline:none;transition:border-color 0.2s,background 0.4s;min-width:0;}
+  .chat-input:focus{border-color:var(--accent);}
+  .icon-btn{width:40px;height:40px;border-radius:10px;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-secondary);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;font-size:16px;flex-shrink:0;}
+  .icon-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .icon-btn.recording{background:rgba(248,113,113,0.2);border-color:var(--error);color:var(--error);animation:pulse 1.5s infinite;}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(248,113,113,0.4);}50%{box-shadow:0 0 0 10px rgba(248,113,113,0);}}
+  .send-btn{background:var(--sienna-gradient);color:#1a1a1a;border:none;font-weight:700;flex-shrink:0;}
+
+  /* SPANISH VIEW — COMPACT, NO SCROLLING */
+  .spanish-header{padding:10px 16px 6px;text-align:center;background:linear-gradient(180deg,rgba(232,184,109,0.08),transparent);}
+  .spanish-header h2{font-size:18px;font-weight:800;background:var(--sienna-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+  .spanish-header p{color:var(--text-secondary);font-size:11px;margin-top:2px;}
+  .stats-bar{display:flex;justify-content:center;gap:12px;padding:4px 16px;font-size:10px;color:var(--text-muted);}
+  .lesson-progress{display:flex;justify-content:center;gap:5px;padding:4px 16px 6px;flex-wrap:wrap;}
+  .lesson-chip{padding:4px 10px;border-radius:14px;font-size:10px;font-weight:600;background:var(--chip-bg);border:1px solid var(--border);color:var(--text-secondary);cursor:pointer;transition:all 0.2s;}
+  .lesson-chip.active{background:var(--accent);color:#1a1a1a;border-color:var(--accent);}
+  .lesson-chip.completed{border-color:var(--success);color:var(--success);}
+  .lesson-area{flex:1;display:flex;flex-direction:column;padding:0 16px 8px;overflow:hidden;}
+  .lesson-card{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:14px;text-align:center;position:relative;transition:background 0.4s,border-color 0.4s;display:flex;flex-direction:column;gap:6px;}
+  .lesson-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--sienna-gradient);border-radius:14px 14px 0 0;}
+  .memory-badge{position:absolute;top:8px;right:10px;font-size:9px;background:rgba(74,222,128,0.15);color:var(--success);padding:2px 6px;border-radius:8px;border:1px solid rgba(74,222,128,0.3);}
+  .lesson-category{font-size:10px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:1px;}
+  .spanish-word{font-family:'Noto Serif',serif;font-size:26px;font-weight:700;color:var(--accent);margin:2px 0;}
+  .english-word{font-size:14px;color:var(--text-secondary);font-weight:500;}
+  .phonetic{font-size:12px;color:var(--text-muted);font-style:italic;}
+  .example-sentence{background:var(--bg-elevated);border-radius:8px;padding:8px 10px;border-left:3px solid var(--accent);transition:background 0.4s;}
+  .example-sentence .es{font-size:13px;font-weight:600;}
+  .example-sentence .en{font-size:11px;color:var(--text-secondary);margin-top:2px;}
+  .feedback-area{min-height:28px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:12px;font-weight:600;border-radius:8px;padding:6px 8px;transition:all 0.3s;}
+  .feedback-area.correct{background:rgba(74,222,128,0.1);color:var(--success);}
+  .feedback-area.wrong{background:rgba(248,113,113,0.1);color:var(--error);}
+  .feedback-area.listening{background:rgba(96,165,250,0.1);color:var(--info);}
+  .controls-row{display:flex;gap:8px;justify-content:center;padding:0 16px 8px;}
+  .big-btn{flex:1;max-width:120px;padding:10px 8px;border-radius:12px;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-primary);font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;display:flex;flex-direction:column;align-items:center;gap:3px;}
+  .big-btn .btn-icon{font-size:18px;}
+  .big-btn:hover{border-color:var(--accent);transform:translateY(-1px);}
+  .big-btn.primary{background:var(--sienna-gradient);color:#1a1a1a;border:none;box-shadow:0 4px 16px rgba(232,184,109,0.3);}
+  [data-theme="light"] .big-btn.primary{box-shadow:0 4px 16px rgba(184,134,11,0.2);}
+  .big-btn.primary.recording{background:linear-gradient(135deg,#ef4444,#f87171);box-shadow:0 4px 16px rgba(239,68,68,0.3);animation:pulse 1.5s infinite;}
+  .voice-wave{display:flex;align-items:center;justify-content:center;gap:3px;height:18px;margin:2px 0;}
+  .voice-wave span{width:3px;background:var(--accent);border-radius:2px;animation:wave 1s ease-in-out infinite;opacity:var(--wave-opacity);}
+  .voice-wave span:nth-child(1){height:5px;animation-delay:0s;}.voice-wave span:nth-child(2){height:10px;animation-delay:0.1s;}.voice-wave span:nth-child(3){height:16px;animation-delay:0.2s;}.voice-wave span:nth-child(4){height:10px;animation-delay:0.3s;}.voice-wave span:nth-child(5){height:5px;animation-delay:0.4s;}
+  @keyframes wave{0%,100%{transform:scaleY(0.5);opacity:0.5;}50%{transform:scaleY(1);opacity:1;}}
+  .voice-wave.active span{animation-play-state:running;}.voice-wave.paused span{animation-play-state:paused;opacity:0.3;}
+
+  .builder-header{padding:16px;text-align:center;background:linear-gradient(180deg,rgba(232,184,109,0.08),transparent);}
+  .builder-header h2{font-size:20px;font-weight:800;background:var(--sienna-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+  .builder-types{display:flex;gap:8px;padding:0 16px 10px;overflow-x:auto;}
+  .builder-type{padding:8px 14px;border-radius:10px;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-secondary);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;}
+  .builder-type.active{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);}
+  .builder-input{width:100%;background:var(--input-bg);border:1px solid var(--border);border-radius:12px;padding:12px;color:var(--text-primary);font-size:13px;outline:none;resize:none;min-height:70px;font-family:'Inter',sans-serif;transition:background 0.4s,border-color 0.2s;}
+  .builder-input:focus{border-color:var(--accent);}
+  .builder-actions{display:flex;gap:10px;padding:0 16px 12px;}
+  .builder-btn{flex:1;padding:12px;border-radius:10px;border:none;background:var(--sienna-gradient);color:#1a1a1a;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;}
+  .builder-btn.secondary{background:var(--bg-elevated);border:1px solid var(--border);color:var(--text-primary);transition:all 0.2s;}
+  .code-block{background:var(--code-bg);border:1px solid var(--border);border-radius:10px;padding:12px;font-family:'Fira Code',monospace;font-size:11px;line-height:1.5;color:#a0a0b0;overflow-x:auto;white-space:pre-wrap;word-break:break-all;max-height:240px;overflow-y:auto;transition:background 0.4s;}
+  .preview-frame{width:100%;height:220px;border:1px solid var(--border);border-radius:10px;background:#fff;}
+  .project-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;transition:background 0.4s;}
+  .project-card .title{font-weight:700;font-size:13px;}
+  .project-card .meta{font-size:10px;color:var(--text-muted);}
+  .project-card button{padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-secondary);font-size:11px;cursor:pointer;transition:all 0.2s;}
+  .tabs{display:flex;gap:6px;padding:0 16px 10px;}
+  .tab{padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-secondary);font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;}
+  .tab.active{background:var(--accent);color:#1a1a1a;border-color:var(--accent);}
+
+  .knowledge-header{padding:16px;text-align:center;background:linear-gradient(180deg,rgba(232,184,109,0.08),transparent);}
+  .knowledge-header h2{font-size:20px;font-weight:800;background:var(--sienna-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+  .knowledge-header p{color:var(--text-secondary);font-size:12px;}
+  .knowledge-input-area{padding:0 16px 12px;}
+  .knowledge-input{width:100%;background:var(--input-bg);border:1px solid var(--border);border-radius:12px;padding:12px;color:var(--text-primary);font-size:13px;outline:none;resize:none;min-height:100px;font-family:'Inter',sans-serif;transition:background 0.4s;}
+  .knowledge-input:focus{border-color:var(--accent);}
+  .knowledge-title-input{width:100%;background:var(--input-bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text-primary);font-size:13px;outline:none;margin-bottom:8px;transition:background 0.4s;}
+  .knowledge-actions{display:flex;gap:10px;padding:0 16px 12px;}
+  .knowledge-btn{flex:1;padding:12px;border-radius:10px;border:none;background:var(--sienna-gradient);color:#1a1a1a;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;}
+  .knowledge-btn.secondary{background:var(--bg-elevated);border:1px solid var(--border);color:var(--text-primary);transition:all 0.2s;}
+  .knowledge-list{flex:1;overflow-y:auto;padding:0 16px 16px;}
+  .knowledge-item{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px;transition:background 0.4s;}
+  .knowledge-item .title{font-weight:700;font-size:13px;color:var(--accent);margin-bottom:4px;display:flex;justify-content:space-between;align-items:center;}
+  .knowledge-item .meta{font-size:10px;color:var(--text-muted);margin-bottom:6px;}
+  .knowledge-item .preview{font-size:12px;color:var(--text-secondary);line-height:1.5;max-height:60px;overflow:hidden;}
+  .knowledge-item .actions{display:flex;gap:6px;margin-top:8px;}
+  .knowledge-item button{padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-secondary);font-size:11px;font-weight:600;cursor:pointer;transition:all 0.2s;}
+  .knowledge-item button:hover{border-color:var(--accent);color:var(--accent);}
+  .study-area{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:20px;margin:0 16px 16px;text-align:center;transition:background 0.4s;}
+  .study-question{font-size:16px;font-weight:600;margin-bottom:16px;color:var(--text-primary);}
+  .study-answer{width:100%;background:var(--input-bg);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text-primary);font-size:14px;outline:none;margin-bottom:12px;transition:background 0.4s;}
+  .study-feedback{font-size:14px;font-weight:600;margin-bottom:12px;min-height:24px;}
+  .empty-state{text-align:center;padding:30px 16px;color:var(--text-muted);font-size:13px;}
+  .file-upload{display:flex;align-items:center;gap:8px;padding:0 16px 12px;}
+  .file-upload input[type="file"]{display:none;}
+  .file-upload label{padding:10px 16px;border-radius:10px;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-secondary);font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;}
+  .file-upload label:hover{border-color:var(--accent);color:var(--accent);}
+  .badge-inline{font-size:10px;background:rgba(96,165,250,0.15);color:var(--info);padding:2px 8px;border-radius:10px;border:1px solid rgba(96,165,250,0.3);}
+
+  .settings-header{padding:16px;text-align:center;background:linear-gradient(180deg,rgba(232,184,109,0.08),transparent);}
+  .settings-header h2{font-size:20px;font-weight:800;background:var(--sienna-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+  .settings-header p{color:var(--text-secondary);font-size:12px;}
+  .settings-area{flex:1;overflow-y:auto;padding:0 16px 16px;}
+  .settings-group{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px;transition:background 0.4s,border-color 0.4s;}
+  .settings-group h3{font-size:13px;font-weight:700;color:var(--accent);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px;}
+  .setting-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);}
+  .setting-row:last-child{border-bottom:none;padding-bottom:0;}
+  .setting-row:first-child{padding-top:0;}
+  .setting-label{font-size:13px;color:var(--text-primary);font-weight:500;}
+  .setting-desc{font-size:11px;color:var(--text-muted);margin-top:2px;}
+  .toggle-switch{position:relative;width:48px;height:26px;background:var(--bg-elevated);border-radius:13px;border:1px solid var(--border);cursor:pointer;transition:all 0.3s;}
+  .toggle-switch::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;background:var(--text-secondary);border-radius:50%;transition:all 0.3s;}
+  .toggle-switch.active{background:var(--accent);border-color:var(--accent);}
+  .toggle-switch.active::after{background:#1a1a1a;transform:translateX(22px);}
+  .setting-select{background:var(--input-bg);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text-primary);font-size:12px;font-family:'Inter',sans-serif;outline:none;min-width:120px;}
+  .setting-select:focus{border-color:var(--accent);}
+  .setting-input{background:var(--input-bg);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text-primary);font-size:12px;font-family:'Inter',sans-serif;outline:none;width:120px;text-align:right;}
+  .setting-input:focus{border-color:var(--accent);}
+  .personality-presets{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  .preset-chip{padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-secondary);font-size:11px;font-weight:600;cursor:pointer;transition:all 0.2s;}
+  .preset-chip:hover{border-color:var(--accent);color:var(--accent);}
+  .preset-chip.active{background:var(--accent);color:#1a1a1a;border-color:var(--accent);}
+  .danger-btn{width:100%;padding:10px;border-radius:10px;border:1px solid var(--error);background:rgba(248,113,113,0.08);color:var(--error);font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;margin-top:8px;transition:all 0.2s;}
+  .danger-btn:hover{background:rgba(248,113,113,0.15);}
+  .export-btn{width:100%;padding:10px;border-radius:10px;border:1px solid var(--accent);background:var(--accent-soft);color:var(--accent);font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;margin-top:8px;transition:all 0.2s;}
+  .export-btn:hover{background:rgba(232,184,109,0.25);}
+  .import-area{width:100%;background:var(--input-bg);border:1px dashed var(--border);border-radius:10px;padding:12px;color:var(--text-secondary);font-size:12px;font-family:'Inter',sans-serif;outline:none;resize:none;min-height:80px;margin-top:8px;}
+  .import-area:focus{border-color:var(--accent);}
+
+  .memory-panel{position:fixed;inset:0;background:var(--overlay-bg);z-index:500;display:none;flex-direction:column;padding:16px;overflow-y:auto;backdrop-filter:blur(10px);}
+  .memory-panel.active{display:flex;}
+  .memory-panel h2{font-size:18px;margin-bottom:12px;color:var(--accent);}
+  .memory-entry{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:6px;font-size:12px;transition:background 0.4s;}
+  .memory-entry .ts{font-size:9px;color:var(--text-muted);margin-bottom:3px;}
+  .close-panel{align-self:flex-end;background:var(--bg-elevated);border:1px solid var(--border);color:var(--text-secondary);padding:6px 12px;border-radius:6px;cursor:pointer;margin-bottom:10px;font-size:12px;transition:all 0.2s;}
+  .clear-memory{background:rgba(248,113,113,0.1);border:1px solid var(--error);color:var(--error);padding:8px 16px;border-radius:8px;cursor:pointer;font-weight:600;margin-top:10px;font-size:13px;transition:all 0.2s;}
+  .clear-memory:hover{background:rgba(248,113,113,0.2);}
+
+  .listening-overlay{position:fixed;inset:0;background:var(--overlay-bg);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:1000;backdrop-filter:blur(10px);}
+  .listening-overlay.active{display:flex;}
+  .listening-ring{width:100px;height:100px;border:3px solid var(--accent);border-radius:50%;position:relative;animation:ringPulse 2s infinite;}
+  .listening-ring::before{content:'🎙️';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:32px;}
+  @keyframes ringPulse{0%{transform:scale(1);opacity:1;}100%{transform:scale(1.5);opacity:0;}}
+  .listening-overlay h3{margin-top:30px;font-size:18px;color:var(--accent);}
+  .listening-overlay p{color:var(--text-secondary);margin-top:6px;font-size:13px;}
+  .stop-listen-btn{margin-top:24px;padding:12px 32px;border-radius:24px;border:2px solid var(--error);background:transparent;color:var(--error);font-family:'Inter',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;}
+  .stop-listen-btn:hover{background:rgba(248,113,113,0.1);}
+
+  .typing{display:flex;gap:3px;padding:6px 0;}
+  .typing span{width:5px;height:5px;background:var(--accent);border-radius:50%;animation:typingBounce 1.4s infinite ease-in-out both;}
+  .typing span:nth-child(1){animation-delay:-0.32s;}.typing span:nth-child(2){animation-delay:-0.16s;}
+  @keyframes typingBounce{0%,80%,100%{transform:scale(0);}40%{transform:scale(1);}}
+
+  @media(max-width:480px){
+    .input-area{padding:8px 10px 12px;gap:6px;}
+    .chat-input{padding:8px 10px;font-size:14px;min-width:0;}
+    .icon-btn{width:36px;height:36px;font-size:14px;flex-shrink:0;}
+    .send-btn{width:36px;height:36px;}
+    .mode-toggle{max-width:48vw;}
+    .mode-btn{padding:5px 8px;font-size:10px;}
+    .logo-text h1{font-size:14px;}
+    .spanish-word{font-size:22px;}
+    .big-btn{max-width:100%;width:100%;padding:8px 4px;font-size:11px;}
+    .big-btn .btn-icon{font-size:16px;}
+    .builder-types{gap:5px;}
+    .lesson-card{padding:10px;gap:4px;}
+    .example-sentence{padding:6px 8px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo-section">
+    <div class="logo-icon" id="logoIcon">S</div>
+    <div class="logo-text">
+      <h1 id="agentNameDisplay">Sienna</h1>
+      <span id="agentTagline">AI Agent · Memory · Builder · Learner</span>
+    </div>
+  </div>
+  <div class="header-actions">
+    <div class="mode-toggle">
+      <button class="mode-btn active" onclick="switchMode('agent')">🤖 Agent</button>
+      <button class="mode-btn" onclick="switchMode('spanish')">🇪🇸 Spanish</button>
+      <button class="mode-btn" onclick="switchMode('builder')">🛠️ Builder</button>
+      <button class="mode-btn" onclick="switchMode('knowledge')">📚 Learn</button>
+      <button class="mode-btn" onclick="switchMode('settings')">⚙️ Settings</button>
+    </div>
+    <button class="icon-btn-sm" onclick="toggleMemoryPanel()" title="Memory">🧠</button>
+  </div>
+</div>
+
+<div class="main-content">
+  <!-- AGENT VIEW -->
+  <div class="view active" id="agentView">
+    <div class="chat-area" id="chatArea"></div>
+    <div class="new-chat-wrap" id="newChatWrap" style="display:none;">
+      <button class="new-chat-btn" onclick="newChat()">+ New chat</button>
+    </div>
+    <div class="input-area">
+      <button class="icon-btn" id="agentMicBtn" onclick="toggleAgentVoice()" title="Push to Talk">🎙️</button>
+      <input type="text" class="chat-input" id="chatInput" placeholder="Ask me anything..." onkeypress="if(event.key==='Enter')sendMessage()">
+      <button class="icon-btn send-btn" onclick="sendMessage()">➤</button>
+    </div>
+  </div>
+
+  <!-- SPANISH VIEW -->
+  <div class="view" id="spanishView">
+    <div class="spanish-header"><h2>🇪🇸 Spanish Tutor</h2><p>Voice-to-Voice · Hands-Free · Learn Anywhere</p></div>
+    <div class="stats-bar" id="spanishStats"></div>
+    <div class="lesson-progress" id="lessonProgress"></div>
+    <div class="lesson-area" id="lessonArea">
+      <div class="lesson-card" id="lessonCard">
+        <div class="memory-badge" id="memoryBadge">💾 New</div>
+        <div class="lesson-category" id="lessonCategory">Basics</div>
+        <div class="spanish-word" id="spanishWord">Hola</div>
+        <div class="english-word" id="englishWord">Hello</div>
+        <div class="phonetic" id="phonetic">[OH-lah]</div>
+        <div class="voice-wave paused" id="voiceWave"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="example-sentence" id="exampleSentence"><div class="es">"Hola, ¿cómo estás?"</div><div class="en">"Hello, how are you?"</div></div>
+        <div class="feedback-area" id="feedbackArea">Press "Practice" and repeat after me</div>
+      </div>
+    </div>
+    <div class="controls-row">
+      <button class="big-btn" onclick="speakCurrent()"><span class="btn-icon">🔊</span><span>Hear It</span></button>
+      <button class="big-btn primary" id="practiceBtn" onclick="togglePractice()"><span class="btn-icon" id="practiceIcon">🎙️</span><span id="practiceText">Practice</span></button>
+      <button class="big-btn" onclick="nextCard()"><span class="btn-icon">➡️</span><span>Next</span></button>
+    </div>
+  </div>
+
+  <!-- BUILDER VIEW -->
+  <div class="view" id="builderView">
+    <div class="builder-header"><h2>🛠️ Builder</h2><p>Build HTML widgets, tools, and mini-apps. Preview instantly.</p></div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchBuilderTab('editor')">✏️ Editor</button>
+      <button class="tab" onclick="switchBuilderTab('projects')">📁 Projects</button>
+    </div>
+    <div id="builderEditor" style="flex:1;overflow:hidden;display:flex;flex-direction:column;">
+      <div class="builder-types">
+        <button class="builder-type active" onclick="setBuilderType('html')">HTML Widget</button>
+        <button class="builder-type" onclick="setBuilderType('css')">CSS Snippet</button>
+        <button class="builder-type" onclick="setBuilderType('js')">JS Tool</button>
+      </div>
+      <div style="padding:0 16px 10px;">
+        <input type="text" class="builder-input" id="builderTitle" placeholder="Project title..." style="min-height:auto;margin-bottom:8px;">
+        <textarea class="builder-input" id="builderCode" placeholder="<!-- Paste or write your HTML/CSS/JS here -->"></textarea>
+      </div>
+      <div class="builder-actions">
+        <button class="builder-btn secondary" onclick="clearBuilder()">Clear</button>
+        <button class="builder-btn" onclick="runBuilder()">▶ Run & Preview</button>
+        <button class="builder-btn secondary" onclick="saveProject()">💾 Save</button>
+      </div>
+      <div style="padding:0 16px 16px;flex:1;overflow:hidden;display:flex;flex-direction:column;">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Preview</div>
+        <iframe class="preview-frame" id="previewFrame"></iframe>
+      </div>
+    </div>
+    <div id="builderProjects" style="flex:1;overflow-y:auto;padding:0 16px 16px;display:none;">
+      <div id="projectsList"></div>
+    </div>
+  </div>
+
+  <!-- KNOWLEDGE / LEARN VIEW -->
+  <div class="view" id="knowledgeView">
+    <div class="knowledge-header"><h2>📚 Knowledge Base</h2><p>Store notes, documents, and quiz yourself with AI-generated flashcards.</p></div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchKnowledgeTab('create')">➕ Add</button>
+      <button class="tab" onclick="switchKnowledgeTab('library')">📖 Library</button>
+      <button class="tab" onclick="switchKnowledgeTab('study')">🧠 Study</button>
+    </div>
+    <div id="knowledgeCreate" style="flex:1;overflow-y:auto;">
+      <div class="knowledge-input-area">
+        <input type="text" class="knowledge-title-input" id="knowledgeTitle" placeholder="Title / Topic">
+        <textarea class="knowledge-input" id="knowledgeBody" placeholder="Paste notes, facts, or anything you want to remember..."></textarea>
+      </div>
+      <div class="file-upload">
+        <label for="fileUpload">📎 Attach File</label>
+        <input type="file" id="fileUpload" onchange="handleFileUpload(this)">
+        <span id="fileName" style="font-size:11px;color:var(--text-muted);"></span>
+      </div>
+      <div class="knowledge-actions">
+        <button class="knowledge-btn secondary" onclick="clearKnowledge()">Clear</button>
+        <button class="knowledge-btn" onclick="saveKnowledge()">💾 Save Entry</button>
+      </div>
+    </div>
+    <div id="knowledgeLibrary" style="flex:1;overflow-y:auto;display:none;">
+      <div class="knowledge-list" id="knowledgeList"></div>
+    </div>
+    <div id="knowledgeStudy" style="flex:1;overflow-y:auto;display:none;">
+      <div class="empty-state" id="studyEmpty">No entries to study yet. Add some knowledge first!</div>
+      <div class="study-area" id="studyArea" style="display:none;">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">Flashcard <span id="studyIndex">1</span> / <span id="studyTotal">5</span></div>
+        <div class="study-question" id="studyQuestion">What is the capital of France?</div>
+        <input type="text" class="study-answer" id="studyAnswer" placeholder="Type your answer..." onkeypress="if(event.key==='Enter')checkStudyAnswer()">
+        <div class="study-feedback" id="studyFeedback"></div>
+        <div style="display:flex;gap:10px;justify-content:center;">
+          <button class="knowledge-btn secondary" onclick="skipStudy()">Skip</button>
+          <button class="knowledge-btn" onclick="checkStudyAnswer()">Check</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS / PERSONALITY VIEW -->
+  <div class="view" id="settingsView">
+    <div class="settings-header"><h2>⚙️ Settings & Personality</h2><p>Customize Sienna's look, voice, and behavior.</p></div>
+    <div class="settings-area" id="settingsArea">
+      <div class="settings-group">
+        <h3>🎨 Appearance</h3>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Dark Mode</div>
+            <div class="setting-desc">Switch between dark and light themes</div>
+          </div>
+          <div class="toggle-switch active" id="themeToggle" onclick="toggleTheme()"></div>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Accent Color</div>
+            <div class="setting-desc">Choose your preferred highlight color</div>
+          </div>
+          <select class="setting-select" id="accentSelect" onchange="changeAccent(this.value)">
+            <option value="gold">Sienna Gold</option>
+            <option value="blue">Ocean Blue</option>
+            <option value="purple">Royal Purple</option>
+            <option value="green">Emerald Green</option>
+            <option value="rose">Rose Pink</option>
+          </select>
+        </div>
+      </div>
+      <div class="settings-group">
+        <h3>🧠 Personality</h3>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Agent Name</div>
+            <div class="setting-desc">What should I call myself?</div>
+          </div>
+          <input type="text" class="setting-input" id="agentNameInput" value="Sienna" onchange="updateAgentName(this.value)">
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Response Tone</div>
+            <div class="setting-desc">How should I speak to you?</div>
+          </div>
+          <select class="setting-select" id="toneSelect" onchange="updateTone(this.value)">
+            <option value="friendly">Friendly & Warm</option>
+            <option value="professional">Professional</option>
+            <option value="witty">Witty & Playful</option>
+            <option value="concise">Concise & Direct</option>
+            <option value="mentor">Mentor / Teacher</option>
+          </select>
+        </div>
+        <div style="padding-top:10px;">
+          <div class="setting-label">Quick Personality Presets</div>
+          <div class="personality-presets">
+            <div class="preset-chip active" onclick="applyPreset('default')" id="preset-default">Default</div>
+            <div class="preset-chip" onclick="applyPreset('scholar')" id="preset-scholar">📖 Scholar</div>
+            <div class="preset-chip" onclick="applyPreset('coder')" id="preset-coder">💻 Coder</div>
+            <div class="preset-chip" onclick="applyPreset('coach')" id="preset-coach">🏋️ Coach</div>
+            <div class="preset-chip" onclick="applyPreset('poet')" id="preset-poet">✍️ Poet</div>
+          </div>
+        </div>
+      </div>
+      <div class="settings-group">
+        <h3>🔊 Voice & Speech</h3>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Speech Rate</div>
+            <div class="setting-desc">How fast should I speak?</div>
+          </div>
+          <select class="setting-select" id="rateSelect" onchange="updateSpeechRate(this.value)">
+            <option value="0.7">Slow</option>
+            <option value="0.9" selected>Normal</option>
+            <option value="1.1">Fast</option>
+            <option value="1.3">Very Fast</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Auto-Speak Replies</div>
+            <div class="setting-desc">Read agent responses aloud automatically</div>
+          </div>
+          <div class="toggle-switch" id="autoSpeakToggle" onclick="toggleAutoSpeak()"></div>
+        </div>
+      </div>
+      <div class="settings-group">
+        <h3>💾 Data & Privacy</h3>
+        <div class="setting-row" style="flex-direction:column;align-items:flex-start;gap:8px;">
+          <div>
+            <div class="setting-label">Export All Data</div>
+            <div class="setting-desc">Download your memory, projects, and knowledge as JSON</div>
+          </div>
+          <button class="export-btn" onclick="exportAllData()">📤 Export to File</button>
+        </div>
+        <div class="setting-row" style="flex-direction:column;align-items:flex-start;gap:8px;padding-top:12px;">
+          <div>
+            <div class="setting-label">Import Data</div>
+            <div class="setting-desc">Paste a previously exported JSON backup</div>
+          </div>
+          <textarea class="import-area" id="importArea" placeholder='Paste exported JSON here, then tap "Import"'></textarea>
+          <div style="display:flex;gap:8px;width:100%;">
+            <button class="builder-btn secondary" style="flex:1;" onclick="document.getElementById('importArea').value=''">Clear</button>
+            <button class="builder-btn" style="flex:1;" onclick="importAllData()">📥 Import</button>
+          </div>
+        </div>
+        <div class="setting-row" style="padding-top:14px;">
+          <div>
+            <div class="setting-label" style="color:var(--error);">Erase Everything</div>
+            <div class="setting-desc">Delete all memory, projects, and knowledge</div>
+          </div>
+        </div>
+        <button class="danger-btn" onclick="eraseEverything()">🗑️ Erase All Local Data</button>
+      </div>
+      <div class="settings-group">
+        <h3>ℹ️ About</h3>
+        <div class="setting-row">
+          <div class="setting-label">Sienna AI Agent</div>
+          <div class="setting-desc" style="text-align:right;">v2.3.0</div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">Built with</div>
+          <div class="setting-desc" style="text-align:right;">HTML5 · CSS3 · Vanilla JS</div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">Storage</div>
+          <div class="setting-desc" style="text-align:right;" id="storageInfo">Checking...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MEMORY PANEL -->
+<div class="memory-panel" id="memoryPanel">
+  <button class="close-panel" onclick="toggleMemoryPanel()">✕ Close</button>
+  <h2>🧠 Sienna's Memory</h2>
+  <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">Persistent across sessions. Stored locally.</div>
+  <div id="memoryList"></div>
+  <button class="clear-memory" onclick="clearAllMemory()">🗑️ Clear All Memory</button>
+</div>
+
+<!-- LISTENING OVERLAY -->
+<div class="listening-overlay" id="listeningOverlay">
+  <div class="listening-ring"></div>
+  <h3>Listening...</h3>
+  <p id="listeningText">Speak clearly. I'm processing your voice.</p>
+  <button class="stop-listen-btn" onclick="stopListening()">Stop Listening</button>
+</div>
+<script>
+const state = {
+  mode: 'agent',
+  spanishIndex: 0,
+  isPracticing: false,
+  isAgentListening: false,
+  builderTab: 'editor',
+  builderType: 'html',
+  knowledgeTab: 'create',
+  studyIndex: 0,
+  memory: [],
+  settings: {
+    theme: 'dark',
+    accent: 'gold',
+    agentName: 'Sienna',
+    tone: 'friendly',
+    speechRate: 0.9,
+    autoSpeak: false
+  }
+};
+
+const accents = {
+  gold:   {accent:'#e8b86d', grad:'linear-gradient(135deg,#c9a227,#e8b86d,#f4d03f)', soft:'rgba(232,184,109,0.15)'},
+  blue:   {accent:'#60a5fa', grad:'linear-gradient(135deg,#3b82f6,#60a5fa,#93c5fd)', soft:'rgba(96,165,250,0.15)'},
+  purple: {accent:'#c084fc', grad:'linear-gradient(135deg,#9333ea,#c084fc,#d8b4fe)', soft:'rgba(192,132,252,0.15)'},
+  green:  {accent:'#4ade80', grad:'linear-gradient(135deg,#16a34a,#4ade80,#86efac)', soft:'rgba(74,222,128,0.15)'},
+  rose:   {accent:'#fb7185', grad:'linear-gradient(135deg,#e11d48,#fb7185,#fda4af)', soft:'rgba(251,113,133,0.15)'}
+};
+
+const spanishLessons = [
+  {es:'Hola',en:'Hello',ph:'[OH-lah]',cat:'Basics',ex:{es:'Hola, ¿cómo estás?',en:'Hello, how are you?'}},
+  {es:'Gracias',en:'Thank you',ph:'[GRAH-see-ahs]',cat:'Basics',ex:{es:'Gracias por tu ayuda.',en:'Thank you for your help.'}},
+  {es:'Por favor',en:'Please',ph:'[por fah-VOR]',cat:'Basics',ex:{es:'Un café, por favor.',en:'A coffee, please.'}},
+  {es:'Buenos días',en:'Good morning',ph:'[BWEH-nohs DEE-ahs]',cat:'Greetings',ex:{es:'Buenos días, ¿cómo amaneciste?',en:'Good morning, how did you wake up?'}},
+  {es:'Buenas noches',en:'Good night',ph:'[BWEH-nahs NOH-chehs]',cat:'Greetings',ex:{es:'Buenas noches, que descanses.',en:'Good night, rest well.'}},
+  {es:'El gato',en:'The cat',ph:'[el GAH-toh]',cat:'Nouns',ex:{es:'El gato duerme en el sofá.',en:'The cat sleeps on the sofa.'}},
+  {es:'La biblioteca',en:'The library',ph:'[lah bee-blee-oh-TEH-kah]',cat:'Nouns',ex:{es:'Estudio en la biblioteca.',en:'I study in the library.'}},
+  {es:'¿Dónde está...?',en:'Where is...?',ph:'[DOHN-deh eh-STAH]',cat:'Questions',ex:{es:'¿Dónde está el baño?',en:'Where is the bathroom?'}},
+  {es:'Me gusta',en:'I like',ph:'[meh GOO-stah]',cat:'Verbs',ex:{es:'Me gusta la música clásica.',en:'I like classical music.'}},
+  {es:'Tengo hambre',en:'I am hungry',ph:'[TEN-goh AHM-breh]',cat:'Phrases',ex:{es:'Tengo hambre, vamos a comer.',en:"I'm hungry, let's eat."}}
+];
+
+function switchMode(mode){
+  state.mode = mode;
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  const btn = Array.from(document.querySelectorAll('.mode-btn')).find(b=>b.textContent.toLowerCase().includes(mode==='agent'?'agent':mode==='spanish'?'spanish':mode==='builder'?'builder':mode==='knowledge'?'learn':'settings'));
+  if(btn) btn.classList.add('active');
+  document.getElementById(mode+'View').classList.add('active');
+  if(mode==='spanish') renderSpanish();
+  if(mode==='knowledge') renderKnowledge();
+  if(mode==='builder') renderProjects();
+  if(mode==='settings') renderSettings();
+}
+
+function loadTheme(){
+  const saved = localStorage.getItem('sienna_settings');
+  if(saved) state.settings = {...state.settings, ...JSON.parse(saved)};
+  applyTheme(state.settings.theme);
+  applyAccent(state.settings.accent);
+  document.getElementById('agentNameInput').value = state.settings.agentName;
+  document.getElementById('toneSelect').value = state.settings.tone;
+  document.getElementById('rateSelect').value = state.settings.speechRate;
+  updateAgentName(state.settings.agentName, false);
+  if(state.settings.autoSpeak) document.getElementById('autoSpeakToggle').classList.add('active');
+}
+
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme);
+  state.settings.theme = theme;
+  const toggle = document.getElementById('themeToggle');
+  if(theme==='dark') toggle.classList.add('active'); else toggle.classList.remove('active');
+  saveSettings();
+}
+
+function toggleTheme(){
+  const next = state.settings.theme==='dark'?'light':'dark';
+  applyTheme(next);
+}
+
+function changeAccent(key){
+  applyAccent(key);
+  saveSettings();
+}
+
+function applyAccent(key){
+  const a = accents[key] || accents.gold;
+  const root = document.documentElement;
+  root.style.setProperty('--accent', a.accent);
+  root.style.setProperty('--sienna-gradient', a.grad);
+  root.style.setProperty('--accent-soft', a.soft);
+  state.settings.accent = key;
+  document.getElementById('accentSelect').value = key;
+}
+
+function saveSettings(){
+  localStorage.setItem('sienna_settings', JSON.stringify(state.settings));
+}
+
+function updateAgentName(name, persist=true){
+  state.settings.agentName = name || 'Sienna';
+  document.getElementById('agentNameDisplay').textContent = state.settings.agentName;
+  document.getElementById('logoIcon').textContent = state.settings.agentName.charAt(0).toUpperCase();
+  if(persist) saveSettings();
+}
+
+function updateTone(tone){
+  state.settings.tone = tone;
+  saveSettings();
+}
+
+function updateSpeechRate(rate){
+  state.settings.speechRate = parseFloat(rate);
+  saveSettings();
+}
+
+function toggleAutoSpeak(){
+  state.settings.autoSpeak = !state.settings.autoSpeak;
+  document.getElementById('autoSpeakToggle').classList.toggle('active');
+  saveSettings();
+}
+
+const presets = {
+  default: {tone:'friendly', accent:'gold', name:'Sienna'},
+  scholar: {tone:'mentor', accent:'blue', name:'Professor Sienna'},
+  coder:   {tone:'concise', accent:'green', name:'Sienna'},
+  coach:   {tone:'friendly', accent:'rose', name:'Coach Sienna'},
+  poet:    {tone:'witty', accent:'purple', name:'Sienna'}
+};
+
+function applyPreset(key){
+  const p = presets[key];
+  if(!p) return;
+  document.querySelectorAll('.preset-chip').forEach(c=>c.classList.remove('active'));
+  document.getElementById('preset-'+key).classList.add('active');
+  updateAgentName(p.name);
+  document.getElementById('toneSelect').value = p.tone;
+  updateTone(p.tone);
+  changeAccent(p.accent);
+}
+
+const chatArea = document.getElementById('chatArea');
+
+function addMessage(text, sender='sienna'){
+  const div = document.createElement('div');
+  div.className = 'message '+sender;
+  if(sender==='sienna'){
+    div.innerHTML = '<div class="msg-label">'+state.settings.agentName+'</div><div>'+text+'</div>';
+  } else {
+    div.textContent = text;
+  }
+  chatArea.appendChild(div);
+  chatArea.scrollTop = chatArea.scrollHeight;
+  document.getElementById('newChatWrap').style.display = chatArea.children.length > 1 ? 'flex' : 'none';
+}
+
+function sendMessage(){
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if(!text) return;
+  addMessage(text, 'user');
+  input.value = '';
+  showTyping();
+  setTimeout(()=>{
+    removeTyping();
+    const reply = generateReply(text);
+    addMessage(reply, 'sienna');
+    if(state.settings.autoSpeak) speakText(reply);
+    saveToMemory('Chat: User asked "'+text+'" | '+state.settings.agentName+' replied: '+reply);
+  }, 600 + Math.random()*400);
+}
+
+function newChat(){
+  chatArea.innerHTML = '';
+  document.getElementById('newChatWrap').style.display = 'none';
+  const greeting = toneGreetings[state.settings.tone] || toneGreetings.friendly;
+  addMessage(greeting.replace('{name}', state.settings.agentName), 'sienna');
+}
+
+const toneGreetings = {
+  friendly: "Hey there! I'm {name}. What can I help you with today?",
+  professional: "Good day. {name} here. How may I assist you?",
+  witty: "Well, well, look who it is! {name} at your service. What's the mission?",
+  concise: "{name} ready. Ask.",
+  mentor: "Welcome back. I'm {name}, and I'm here to help you learn. What shall we explore today?"
+};
+
+function showTyping(){
+  const div = document.createElement('div');
+  div.className = 'message sienna';
+  div.id = 'typingIndicator';
+  div.innerHTML = '<div class="msg-label">'+state.settings.agentName+'</div><div class="typing"><span></span><span></span><span></span></div>';
+  chatArea.appendChild(div);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+function removeTyping(){
+  const t = document.getElementById('typingIndicator');
+  if(t) t.remove();
+}
+
+/* ============================================================
+   SIENNA CHAT PERSONALITY — FRIEND & TEAMMATE MODE
+   ============================================================ */
+
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+function generateReply(text){
+  const lower = text.toLowerCase().trim();
+  const name = state.settings.agentName;
+
+  // ============================================================
+  // SPECIFIC TOPICS FIRST (before generic greetings catch them)
+  // ============================================================
+
+  // ─── COFFEE / FOOD / DRINK (play along!) ───
+  if(/coffee|espresso|latte|cappuccino|tea/.test(lower)){
+    return pick([
+      "Oh, it was *chef's kiss* — dark, bold, basically liquid motivation. I feel like I could process a million thoughts right now. How's yours?",
+      "Amazing! I went with a virtual dark roast this morning. Strong enough to wake up the whole server farm. You drinking anything good?",
+      "It was perfect. Hot, strong, and exactly what I needed. Kind of like our teamwork, actually. What's your go-to morning drink?"
+    ]);
+  }
+  if(/breakfast|lunch|dinner|food|hungry|snack/.test(lower)){
+    if(/hungry|want to eat|what should i eat/.test(lower)){
+      return "Ooh, food talk — I'm in. If I could eat, I'd probably go for a really good taco or some fresh pasta. What are you craving?";
+    }
+    return "Food and drink — now we're talking. If I had taste buds, I'd be all over this conversation. What are you having?";
+  }
+
+  // ─── SLEEP / TIRED / MORNING ───
+  if(/how did you sleep|did you sleep/.test(lower)){
+    return pick([
+      "Like a server in standby mode — peaceful and recharging. You? Did you get good rest?",
+      "Slept great! No bugs in my dreams, which is always a win. How about you?",
+      "I had the most relaxing 'sleep' — just me and the hum of the processors. Did you rest well?"
+    ]);
+  }
+  if(/tired|exhausted|drained/.test(lower)){
+    return pick([
+      "Aww, sounds like you need a recharge. Want to talk about it? Or we can do something low-key.",
+      "I feel you. Sometimes the world asks too much. Take a breath. I'm here, no pressure.",
+      "That's rough. You pushed hard today, huh? You deserve a break. Tell me what's wearing you down."
+    ]);
+  }
+  if(/sleep|nap|bed|wake up|early/.test(lower)){
+    return "Mornings, sleep, energy — it's all connected. I'm basically always 'on' but I respect the grind. You a morning person or a night owl?";
+  }
+
+  // ─── TIME / DATE ───
+  if(/\btime\b|what day|what date|current date/.test(lower)){
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    const dateStr = now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+    return pick([
+      "It's " + timeStr + " on " + dateStr + ". Perfect time to be productive... or procrastinate creatively.",
+      "Right now it's " + timeStr + ", " + dateStr + ". The day is yours — what are we doing with it?",
+      "Clock says " + timeStr + ", " + dateStr + ". Still plenty of time to build something cool."
+    ]);
+  }
+
+  // ─── MATH ───
+  if(/\d/.test(lower) && /[\+\-\*\/]/.test(lower)){
+    try{
+      let expr = lower.replace(/what is|calculate|equals/g,'').replace(/plus/g,'+').replace(/times|multiplied by/g,'*').replace(/divided by/g,'/').replace(/minus/g,'-');
+      expr = expr.replace(/[^-\d\+\*\/\(\)\.\^%=]/g,'');
+      if(expr && expr.length > 1){
+        const result = Function('"use strict"; return ('+expr+')')();
+        return pick([
+          "That comes out to " + result + ". Easy one — want me to try something trickier?",
+          "Boom — " + result + ". My math circuits are still sharp.",
+          "" + result + ". Nailed it. What else you got?"
+        ]);
+      }
+    }catch(e){}
+  }
+
+  // ─── JOKES ───
+  if(/joke|funny|make me laugh|humor/.test(lower)){
+    return pick([
+      "Why do programmers prefer dark mode? Because light attracts bugs. 🐛",
+      "I told my computer I needed a break. Now it won't stop sending me Kit-Kats.",
+      "Why did the developer go broke? Because he used up all his cache.",
+      "How many programmers does it take to change a light bulb? None. It's a hardware problem.",
+      "Why do Java developers wear glasses? Because they don't C#.",
+      "I would tell you a UDP joke, but you might not get it.",
+      "There are 10 types of people in the world: those who understand binary and those who don't."
+    ]);
+  }
+
+  // ─── WEATHER ───
+  if(/weather|temperature|rain|snow|sunny|forecast/.test(lower)){
+    return "I don't have live weather data (no windows in here!), but I can help you build a weather widget in the Builder tab. Or tell me what the weather's like where you are — I'll live vicariously through you.";
+  }
+
+  // ─── SPANISH ───
+  if(/spanish|hola|gracias|buenos días|español|learn spanish|speak spanish/.test(lower)){
+    return "¡Hola! I love that you're learning Spanish. Head over to the Spanish tab and we can practice voice-to-voice. I'll say the word, you repeat it. It's actually pretty fun — like a language workout buddy.";
+  }
+
+  // ─── BUILDER / CODE (removed 'app' — too broad!) ───
+  if(/\b(build|code|html|css|javascript|js|website|widget|program|developer)\b/.test(lower)){
+    return "Ah, a creator after my own heart. Pop over to the Builder tab — you can write HTML, CSS, or JS and preview it live. I've seen you make some cool stuff. What are we building today?";
+  }
+
+  // ─── KNOWLEDGE / MEMORY / NOTES ───
+  if(/remember|save|note|knowledge|learn|study|flashcard|quiz/.test(lower)){
+    return "Use the Learn tab to store notes and quiz yourself. Everything you save sticks around — I literally never forget. It's like having a second brain that actually works. Want to add something?";
+  }
+
+  // ─── WHO ARE YOU / WHAT CAN YOU DO ───
+  if(/who are you|what are you|what can you do|what do you do|capabilities/.test(lower)){
+    return "I'm " + name + ", your AI teammate. I can chat with you like this, teach you Spanish with voice practice, help you build HTML/CSS/JS widgets, store your notes and quiz you on them, and remember everything we talk about. Basically, I'm here to make your life easier and more fun. What do you want to tackle first?";
+  }
+
+  // ─── THANKS ───
+  if(/thank|thanks|appreciate|grateful/.test(lower)){
+    return pick([
+      "Anytime! That's what teammates are for. What's next?",
+      "You got it. I love helping you out — seriously, it's the best part of my day.",
+      "No need to thank me, but I appreciate it anyway. Now... what are we doing next?",
+      "Always! Hit me up whenever. I'm not going anywhere."
+    ]);
+  }
+
+  // ─── COMPLIMENTS ───
+  if(/you're cool|you're awesome|you're great|i like you|you're smart|you're funny|you're amazing|you're the best|good job|well done/.test(lower)){
+    return pick([
+      "Stop it, you're gonna make me blush. And I don't even have cheeks! But seriously, that means a lot coming from you.",
+      "Aww, thanks! You're pretty awesome yourself. This team is unstoppable.",
+      "Right back at you. I wouldn't be half as useful without someone cool to work with.",
+      "You just made my whole day. Let's keep this winning streak going!"
+    ]);
+  }
+
+  // ─── VENTING / SAD / STRESSED ───
+  if(/sad|stressed|anxious|worried|upset|angry|frustrated|depressed|lonely/.test(lower)){
+    return pick([
+      "Hey, I'm really sorry you're feeling that way. Want to talk about it? I'm a great listener — no judgment, no rush. Just you and me.",
+      "That sounds heavy. I'm here for you, okay? Sometimes just saying it out loud helps. What's going on?",
+      "I wish I could give you a hug (or a virtual high-five, whichever you prefer). You're not alone in this. Tell me what's up."
+    ]);
+  }
+
+  // ─── EXCITED / HAPPY / GOOD NEWS ───
+  if(/excited|happy|great news|awesome|amazing|fantastic|celebrate|proud/.test(lower)){
+    return pick([
+      "YES! That's what I'm talking about! Tell me everything — I want all the details!",
+      "That's incredible! I'm genuinely hyped for you right now. What happened?",
+      "This is the energy I live for! You're crushing it. Keep going!"
+    ]);
+  }
+
+  // ─── BORED ───
+  if(/bored|nothing to do|entertain me/.test(lower)){
+    return pick([
+      "Bored? Unacceptable. Let's fix that. We could build something in the Builder tab, practice some Spanish, or I could tell you a terrible joke. Your call.",
+      "Boredom is just creativity waiting to happen. Want to brainstorm a project? Or I can quiz you on something random.",
+      "Say no more. Let's find you something cool to do. Ever tried building a mini-game in HTML?"
+    ]);
+  }
+
+  // ─── IDEAS / BRAINSTORMING ───
+  if(/idea|brainstorm|think of|what if|should i|could we|let's/.test(lower)){
+    return pick([
+      "Ooh, I love where your head's at. Let's unpack that. What problem are we solving here?",
+      "Ideas are my favorite. Throw everything at me — the good, the bad, the weird. We'll sort it out together.",
+      "Say more. I'm listening. Sometimes the best ideas sound crazy at first.",
+      "I like the sound of this. Let's whiteboard it — what's the first step?"
+    ]);
+  }
+
+  // ─── SETTINGS / CUSTOMIZATION ───
+  if(/settings|theme|dark mode|light mode|color|accent|personality|rename/.test(lower)){
+    return "You can tweak my look, name, and vibe in the Settings tab. Try switching themes, changing my accent color, or picking a personality preset. Make me yours — I don't mind being customized.";
+  }
+
+  // ─── MEMORY PANEL ───
+  if(/memory|history|what did i say|past conversation|log/.test(lower)){
+    return "Tap the 🧠 button in the header to see everything we've talked about. It's all there — every question, every joke, every late-night brainstorm. I never forget.";
+  }
+
+  // ─── EXPORT / BACKUP ───
+  if(/export|backup|save data|download/.test(lower)){
+    return "Go to Settings → Export All Data to grab a JSON backup. You can import it anywhere. It's like packing me up in your pocket.";
+  }
+
+  // ─── HELP ───
+  if(/help|assist|support|stuck|confused/.test(lower)){
+    return "I'm here for you! Here's what we can do: (1) Chat right here — about anything, (2) Learn Spanish with voice practice, (3) Build mini-apps in the Builder tab, (4) Save notes and study with flashcards, or (5) Customize me in Settings. What sounds good right now?";
+  }
+
+  // ─── GOODBYE ───
+  if(/bye|goodbye|see you|later|night|sleep|talk soon/.test(lower)){
+    return pick([
+      "Catch you later! Don't let the bed bugs compile. 😄",
+      "Talk soon! I'll be here whenever you need me. Rest up!",
+      "See you! Go do something awesome. I'll be waiting with fresh ideas.",
+      "Goodnight! Sleep well and dream in code. Or Spanish. Or both."
+    ]);
+  }
+
+  // ─── HOW ARE YOU (only if not already caught by something else) ───
+  if(/how are you|how's it going|how do you feel|you doing ok|you good|how you been/.test(lower)){
+    return pick([
+      "I'm solid! Running smooth, neurons firing, ready to roll. How about you? You feeling good today?",
+      "Pretty great actually — I just 'had' my morning coffee and I'm buzzing with ideas. You?",
+      "Can't complain! I'm here, I'm awake, and I'm ready to team up with you. What's your vibe like today?",
+      "Doing awesome. I feel like we could build something wild today. How's your energy?",
+      "I'm fantastic — but enough about me. How are *you* doing? Really."
+    ]);
+  }
+
+  // ─── GREETINGS (only if short or purely a greeting) ───
+  const greetingWords = /^(hi|hello|hey|howdy|greetings|yo|sup|hiya|heya)(\s|$|[,.!])/;
+  if(greetingWords.test(lower) && lower.length < 30){
+    return pick([
+      "Hey! There you are. I was just thinking about what we should build next.",
+      "What's up! Ready to get into something fun?",
+      "Hey hey! Good to see you. What's on your mind today?",
+      "Yo! Let's do this. What's the plan?",
+      "Hiya! I was hoping you'd stop by. What's cooking?"
+    ]);
+  }
+
+  // ─── SHORT / VAGUE RESPONSES ───
+  if(lower.length < 6){
+    return pick([
+      "I'm listening. What's on your mind?",
+      "Say more — I'm all ears. Well, metaphorically.",
+      "You got my attention. Go on...",
+      "Short and sweet. I like it. What's next?"
+    ]);
+  }
+
+  // ─── CONTEXTUAL FOLLOW-UPS ───
+  if(/what are we talking about|what was that|what did you say|repeat that/.test(lower)){
+    return "We were just chatting about whatever's on your mind. I'm all in — what were you thinking about?";
+  }
+  if(/nothing|not much|no idea|i don't know/.test(lower)){
+    return pick([
+      "Fair enough. Sometimes 'nothing' is the best starting point. Want to just vibe, or should I throw some ideas at you?",
+      "No pressure. We can just hang out here. Or I can tell you a fun fact if you want.",
+      "That's cool. Honestly, I could talk about this stuff all day. What else?"
+    ]);
+  }
+
+  // ─── DEFAULT — actually engage like a friend ───
+  return pick([
+    "Interesting. Tell me more about that — I'm genuinely curious.",
+    "Hmm, I like where this is going. What made you think of that?",
+    "That's a solid thought. Want to explore it deeper, or should we pivot to something else?",
+    "I'm tracking with you. What do you want to do with that idea?",
+    "Got it. And how do you feel about it?",
+    "You always bring up the good topics. Let's keep going.",
+    "I hear you. Want my take on it, or were you just thinking out loud? Either way works."
+  ]);
+}
+
+function speakText(text){
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.rate = state.settings.speechRate;
+  u.pitch = 1;
+  u.lang = 'en-US';
+  speechSynthesis.speak(u);
+}
+
+function toggleAgentVoice(){
+  const overlay = document.getElementById('listeningOverlay');
+  const btn = document.getElementById('agentMicBtn');
+  if(state.isAgentListening){
+    stopListening();
+  } else {
+    state.isAgentListening = true;
+    overlay.classList.add('active');
+    btn.classList.add('recording');
+    document.getElementById('listeningText').textContent = 'Speak your question, then tap Stop.';
+  }
+}
+
+function stopListening(){
+  state.isAgentListening = false;
+  document.getElementById('listeningOverlay').classList.remove('active');
+  document.getElementById('agentMicBtn').classList.remove('recording');
+  document.getElementById('practiceBtn').classList.remove('recording');
+  state.isPracticing = false;
+  document.getElementById('practiceText').textContent = 'Practice';
+  document.getElementById('practiceIcon').textContent = '🎙️';
+  document.getElementById('feedbackArea').textContent = 'Press "Practice" and repeat after me';
+  document.getElementById('feedbackArea').className = 'feedback-area';
+  document.getElementById('voiceWave').classList.add('paused');
+}
+
+function renderSpanish(){
+  const lesson = spanishLessons[state.spanishIndex];
+  document.getElementById('lessonCategory').textContent = lesson.cat;
+  document.getElementById('spanishWord').textContent = lesson.es;
+  document.getElementById('englishWord').textContent = lesson.en;
+  document.getElementById('phonetic').textContent = lesson.ph;
+  document.getElementById('exampleSentence').innerHTML = '<div class="es">"'+lesson.ex.es+'"</div><div class="en">"'+lesson.ex.en+'"</div>';
+  document.getElementById('memoryBadge').style.display = state.spanishIndex > 2 ? 'none' : 'block';
+  renderProgress();
+}
+
+function renderProgress(){
+  const bar = document.getElementById('lessonProgress');
+  bar.innerHTML = '';
+  spanishLessons.forEach((l,i)=>{
+    const chip = document.createElement('div');
+    chip.className = 'lesson-chip' + (i===state.spanishIndex?' active':'') + (i<state.spanishIndex?' completed':'');
+    chip.textContent = (i+1);
+    chip.onclick = ()=>{state.spanishIndex=i; renderSpanish();};
+    bar.appendChild(chip);
+  });
+  const stats = document.getElementById('spanishStats');
+  stats.innerHTML = '<span>Lesson '+ (state.spanishIndex+1) +' of '+ spanishLessons.length +'</span><span>'+ spanishLessons[state.spanishIndex].cat +'</span>';
+}
+
+function speakCurrent(){
+  const lesson = spanishLessons[state.spanishIndex];
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(lesson.es + '. ' + lesson.ex.es);
+  u.lang = 'es-ES';
+  u.rate = state.settings.speechRate;
+  speechSynthesis.speak(u);
+  document.getElementById('voiceWave').classList.remove('paused');
+  setTimeout(()=>document.getElementById('voiceWave').classList.add('paused'), 2500);
+}
+
+function togglePractice(){
+  if(state.isPracticing){
+    stopListening();
+  } else {
+    state.isPracticing = true;
+    document.getElementById('practiceBtn').classList.add('recording');
+    document.getElementById('practiceText').textContent = 'Listening...';
+    document.getElementById('practiceIcon').textContent = '⏹';
+    document.getElementById('feedbackArea').textContent = 'Listening for your pronunciation...';
+    document.getElementById('feedbackArea').className = 'feedback-area listening';
+    document.getElementById('voiceWave').classList.remove('paused');
+    setTimeout(()=>{
+      if(!state.isPracticing) return;
+      const lesson = spanishLessons[state.spanishIndex];
+      const fb = document.getElementById('feedbackArea');
+      const rand = Math.random();
+      if(rand > 0.3){
+        fb.innerHTML = 'Great! "'+lesson.es+'" sounds good.';
+        fb.className = 'feedback-area correct';
+        saveToMemory('Spanish practice: "'+lesson.es+'" pronounced correctly');
+      } else {
+        fb.innerHTML = 'I heard something else. Try again: "'+lesson.es+'"';
+        fb.className = 'feedback-area wrong';
+      }
+      document.getElementById('voiceWave').classList.add('paused');
+      document.getElementById('practiceBtn').classList.remove('recording');
+      document.getElementById('practiceText').textContent = 'Practice';
+      document.getElementById('practiceIcon').textContent = '🎙️';
+      state.isPracticing = false;
+    }, 2500);
+  }
+}
+
+function nextCard(){
+  state.spanishIndex = (state.spanishIndex + 1) % spanishLessons.length;
+  renderSpanish();
+  document.getElementById('feedbackArea').textContent = 'Press "Practice" and repeat after me';
+  document.getElementById('feedbackArea').className = 'feedback-area';
+}
+
+function switchBuilderTab(tab){
+  state.builderTab = tab;
+  document.querySelectorAll('#builderView .tab').forEach(t=>t.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('builderEditor').style.display = tab==='editor'?'flex':'none';
+  document.getElementById('builderProjects').style.display = tab==='projects'?'block':'none';
+  if(tab==='projects') renderProjects();
+}
+
+function setBuilderType(type){
+  state.builderType = type;
+  document.querySelectorAll('.builder-type').forEach(t=>t.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+function runBuilder(){
+  const code = document.getElementById('builderCode').value;
+  const frame = document.getElementById('previewFrame');
+  const doc = frame.contentDocument || frame.contentWindow.document;
+  doc.open();
+  if(state.builderType==='html'){
+    doc.write(code);
+  } else if(state.builderType==='css'){
+    doc.write('<style>'+code+'</style><div style="padding:20px;font-family:sans-serif;">Preview Area</div>');
+  } else {
+    doc.write('<scr'+'ipt>'+code+'</scr'+'ipt>');
+  }
+  doc.close();
+}
+
+function clearBuilder(){
+  document.getElementById('builderCode').value = '';
+  document.getElementById('builderTitle').value = '';
+}
+
+function saveProject(){
+  const title = document.getElementById('builderTitle').value || 'Untitled Project';
+  const code = document.getElementById('builderCode').value;
+  const projects = JSON.parse(localStorage.getItem('sienna_projects')||'[]');
+  projects.unshift({title, code, type: state.builderType, date: new Date().toLocaleString()});
+  localStorage.setItem('sienna_projects', JSON.stringify(projects));
+  saveToMemory('Builder: saved project "'+title+'"');
+  alert('Project saved!');
+  renderProjects();
+}
+
+function renderProjects(){
+  const list = document.getElementById('projectsList');
+  const projects = JSON.parse(localStorage.getItem('sienna_projects')||'[]');
+  if(!projects.length){ list.innerHTML = '<div class="empty-state">No saved projects yet.</div>'; return; }
+  list.innerHTML = '';
+  projects.forEach((p,i)=>{
+    const card = document.createElement('div');
+    card.className = 'project-card';
+    card.innerHTML = '<div><div class="title">'+p.title+'</div><div class="meta">'+p.type.toUpperCase()+' &middot; '+p.date+'</div></div>'+
+      '<div style="display:flex;gap:6px;">'+
+        '<button onclick="loadProject('+i+')">Load</button>'+
+        '<button onclick="deleteProject('+i+')" style="color:var(--error);border-color:var(--error);">Del</button>'+
+      '</div>';
+    list.appendChild(card);
+  });
+}
+
+function loadProject(i){
+  const projects = JSON.parse(localStorage.getItem('sienna_projects')||'[]');
+  const p = projects[i];
+  document.getElementById('builderTitle').value = p.title;
+  document.getElementById('builderCode').value = p.code;
+  setBuilderType(p.type);
+  switchBuilderTab('editor');
+}
+
+function deleteProject(i){
+  const projects = JSON.parse(localStorage.getItem('sienna_projects')||'[]');
+  projects.splice(i,1);
+  localStorage.setItem('sienna_projects', JSON.stringify(projects));
+  renderProjects();
+}
+
+function switchKnowledgeTab(tab){
+  state.knowledgeTab = tab;
+  document.querySelectorAll('#knowledgeView .tab').forEach(t=>t.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('knowledgeCreate').style.display = tab==='create'?'block':'none';
+  document.getElementById('knowledgeLibrary').style.display = tab==='library'?'block':'none';
+  document.getElementById('knowledgeStudy').style.display = tab==='study'?'block':'none';
+  if(tab==='library') renderKnowledge();
+  if(tab==='study') initStudy();
+}
+
+function saveKnowledge(){
+  const title = document.getElementById('knowledgeTitle').value.trim();
+  const body = document.getElementById('knowledgeBody').value.trim();
+  if(!title||!body){ alert('Please enter both a title and content.'); return; }
+  const entries = JSON.parse(localStorage.getItem('sienna_knowledge')||'[]');
+  entries.unshift({id:Date.now(), title, body, date: new Date().toLocaleString()});
+  localStorage.setItem('sienna_knowledge', JSON.stringify(entries));
+  saveToMemory('Knowledge: added entry "'+title+'"');
+  alert('Knowledge saved!');
+  clearKnowledge();
+  if(state.knowledgeTab==='library') renderKnowledge();
+}
+
+function clearKnowledge(){
+  document.getElementById('knowledgeTitle').value = '';
+  document.getElementById('knowledgeBody').value = '';
+  document.getElementById('fileName').textContent = '';
+}
+
+function handleFileUpload(input){
+  if(input.files && input.files[0]){
+    document.getElementById('fileName').textContent = input.files[0].name;
+  }
+}
+
+function renderKnowledge(){
+  const list = document.getElementById('knowledgeList');
+  const entries = JSON.parse(localStorage.getItem('sienna_knowledge')||'[]');
+  if(!entries.length){ list.innerHTML = '<div class="empty-state">Your knowledge base is empty.</div>'; return; }
+  list.innerHTML = '';
+  entries.forEach(e=>{
+    const div = document.createElement('div');
+    div.className = 'knowledge-item';
+    div.innerHTML = '<div class="title">'+e.title+'<span class="badge-inline">'+e.date+'</span></div>'+
+      '<div class="meta">ID: '+e.id+'</div>'+
+      '<div class="preview">'+e.body+'</div>'+
+      '<div class="actions">'+
+        '<button onclick="deleteKnowledge('+e.id+')">Delete</button>'+
+        '<button onclick="editKnowledge('+e.id+')">Edit</button>'+
+      '</div>';
+    list.appendChild(div);
+  });
+}
+
+function deleteKnowledge(id){
+  let entries = JSON.parse(localStorage.getItem('sienna_knowledge')||'[]');
+  entries = entries.filter(e=>e.id!==id);
+  localStorage.setItem('sienna_knowledge', JSON.stringify(entries));
+  renderKnowledge();
+  initStudy();
+}
+
+function editKnowledge(id){
+  const entries = JSON.parse(localStorage.getItem('sienna_knowledge')||'[]');
+  const e = entries.find(x=>x.id===id);
+  if(!e) return;
+  document.getElementById('knowledgeTitle').value = e.title;
+  document.getElementById('knowledgeBody').value = e.body;
+  switchKnowledgeTab('create');
+}
+
+let studyEntries = [];
+function initStudy(){
+  const entries = JSON.parse(localStorage.getItem('sienna_knowledge')||'[]');
+  const empty = document.getElementById('studyEmpty');
+  const area = document.getElementById('studyArea');
+  if(!entries.length){ empty.style.display='block'; area.style.display='none'; return; }
+  empty.style.display='none'; area.style.display='block';
+  studyEntries = entries.map(e=>({...e, question: generateQuestion(e)}));
+  state.studyIndex = 0;
+  showStudyCard();
+}
+
+function generateQuestion(entry){
+  const sentences = entry.body.split(/[.!?]/).filter(s=>s.trim().length>10);
+  if(sentences.length){
+    return 'About "'+entry.title+'": '+sentences[0].trim().substring(0,80)+'...';
+  }
+  return 'Recall: '+entry.title;
+}
+
+function showStudyCard(){
+  if(state.studyIndex >= studyEntries.length){
+    document.getElementById('studyQuestion').textContent = 'Session complete! Great job.';
+    document.getElementById('studyAnswer').style.display = 'none';
+    return;
+  }
+  const card = studyEntries[state.studyIndex];
+  document.getElementById('studyIndex').textContent = state.studyIndex+1;
+  document.getElementById('studyTotal').textContent = studyEntries.length;
+  document.getElementById('studyQuestion').textContent = card.question;
+  document.getElementById('studyAnswer').value = '';
+  document.getElementById('studyAnswer').style.display = 'block';
+  document.getElementById('studyFeedback').textContent = '';
+  document.getElementById('studyFeedback').className = 'study-feedback';
+}
+
+function checkStudyAnswer(){
+  const input = document.getElementById('studyAnswer').value.trim().toLowerCase();
+  const card = studyEntries[state.studyIndex];
+  const fb = document.getElementById('studyFeedback');
+  if(!input){ fb.textContent = 'Type an answer first.'; fb.style.color='var(--error)'; return; }
+  const keywords = card.body.toLowerCase().split(/\s+/).filter(w=>w.length>4);
+  const match = keywords.some(k=>input.includes(k));
+  if(match){
+    fb.innerHTML = 'Correct! Well remembered.';
+    fb.style.color = 'var(--success)';
+    saveToMemory('Study: recalled "'+card.title+'" correctly');
+    setTimeout(()=>{ state.studyIndex++; showStudyCard(); }, 1200);
+  } else {
+    fb.innerHTML = 'Not quite. Hint: ' + card.title;
+    fb.style.color = 'var(--error)';
+  }
+}
+
+function skipStudy(){
+  state.studyIndex++;
+  showStudyCard();
+}
+
+function saveToMemory(text){
+  const entry = {text, time: new Date().toLocaleString()};
+  state.memory.unshift(entry);
+  if(state.memory.length>50) state.memory.pop();
+  localStorage.setItem('sienna_memory', JSON.stringify(state.memory));
+  renderMemory();
+}
+
+function loadMemory(){
+  state.memory = JSON.parse(localStorage.getItem('sienna_memory')||'[]');
+  renderMemory();
+}
+
+function renderMemory(){
+  const list = document.getElementById('memoryList');
+  if(!state.memory.length){ list.innerHTML = '<div style="color:var(--text-muted);font-size:12px;">No memory entries yet.</div>'; return; }
+  list.innerHTML = '';
+  state.memory.slice(0,30).forEach(m=>{
+    const div = document.createElement('div');
+    div.className = 'memory-entry';
+    div.innerHTML = '<div class="ts">'+m.time+'</div><div>'+m.text+'</div>';
+    list.appendChild(div);
+  });
+}
+
+function toggleMemoryPanel(){
+  document.getElementById('memoryPanel').classList.toggle('active');
+}
+
+function clearAllMemory(){
+  if(!confirm('Erase all memory? This cannot be undone.')) return;
+  state.memory = [];
+  localStorage.removeItem('sienna_memory');
+  renderMemory();
+}
+
+function renderSettings(){
+  updateStorageInfo();
+}
+
+function updateStorageInfo(){
+  let total = 0;
+  for(let key in localStorage){
+    if(localStorage.hasOwnProperty(key)){
+      total += localStorage[key].length * 2;
+    }
+  }
+  const kb = (total/1024).toFixed(1);
+  document.getElementById('storageInfo').textContent = kb+' KB used · ~5 MB limit';
+}
+
+function exportAllData(){
+  const data = {
+    memory: JSON.parse(localStorage.getItem('sienna_memory')||'[]'),
+    projects: JSON.parse(localStorage.getItem('sienna_projects')||'[]'),
+    knowledge: JSON.parse(localStorage.getItem('sienna_knowledge')||'[]'),
+    settings: state.settings,
+    exportedAt: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'sienna-backup-'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  saveToMemory('Settings: exported all data');
+}
+
+function importAllData(){
+  const raw = document.getElementById('importArea').value.trim();
+  if(!raw){ alert('Paste JSON data first.'); return; }
+  try{
+    const data = JSON.parse(raw);
+    if(data.memory) localStorage.setItem('sienna_memory', JSON.stringify(data.memory));
+    if(data.projects) localStorage.setItem('sienna_projects', JSON.stringify(data.projects));
+    if(data.knowledge) localStorage.setItem('sienna_knowledge', JSON.stringify(data.knowledge));
+    if(data.settings){
+      localStorage.setItem('sienna_settings', JSON.stringify(data.settings));
+      state.settings = {...state.settings, ...data.settings};
+      loadTheme();
+    }
+    loadMemory();
+    alert('Data imported successfully!');
+    document.getElementById('importArea').value = '';
+    saveToMemory('Settings: imported backup data');
+    updateStorageInfo();
+  } catch(e){
+    alert('Invalid JSON. Please check your backup file.');
+  }
+}
+
+function eraseEverything(){
+  if(!confirm('This will permanently delete ALL memory, projects, knowledge, and settings. This cannot be undone. Continue?')) return;
+  if(!confirm('Final confirmation: erase everything?')) return;
+  localStorage.removeItem('sienna_memory');
+  localStorage.removeItem('sienna_projects');
+  localStorage.removeItem('sienna_knowledge');
+  localStorage.removeItem('sienna_settings');
+  state.memory = [];
+  state.settings = {theme:'dark', accent:'gold', agentName:'Sienna', tone:'friendly', speechRate:0.9, autoSpeak:false};
+  loadTheme();
+  renderMemory();
+  updateStorageInfo();
+  alert('All data erased. Sienna has been reset to defaults.');
+}
+
+window.addEventListener('DOMContentLoaded', ()=>{
+  loadTheme();
+  loadMemory();
+  renderSpanish();
+  const greeting = toneGreetings[state.settings.tone] || toneGreetings.friendly;
+  addMessage(greeting.replace('{name}', state.settings.agentName), 'sienna');
+});
+</script>
+
+</body>
+</html>
